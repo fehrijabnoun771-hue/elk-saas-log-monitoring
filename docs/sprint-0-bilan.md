@@ -6,7 +6,10 @@
 - Environnement vérifié (Docker, Docker Compose, Python, GitHub CLI)
 
 ## Ce qui a bloqué
-(à compléter)
+- Installation des outils interrompue (^C) : paquets Docker, pip, venv et gh à reprendre
+- Elasticsearch, Logstash et Kibana déjà installés en natif, Elasticsearch avec la sécurité désactivée (HTTP sans mot de passe)
+- Erreurs dans mon script de vérification des documents (regex des user stories, backticks dans un message), corrigées
+- Option gh inconnue dans la version installée : passage du dépôt en public sans cette option
 
 ## Ajustements pour le Sprint 1
 - Arrêter Elasticsearch et Kibana natifs (inactifs) : les services tournent dans Docker
