@@ -5,7 +5,10 @@ Scénario D : application Web SaaS utilisée par des milliers d'entreprises clie
 Les logs sont dispersés, sans alerting ni visualisation. La plateforme les centralise
 et les rend exploitables.
 
-**Justification du choix :** (à rédiger, 3-4 lignes)
+**Justification du choix :** 
+Nous allons chosi cette solution pour obtenir des kpi concrets et mesurables .cela permet 
+d'avoir un cas d'usage d'alerte simple a démontre ,avec un sénario réaliste et
+proche d'un vrai métier DevOps
 
 ## 2. Application SaaS monitorée : TaskFlow
 SaaS fictif de gestion de projets. Les logs sont simulés avec un script Faker.
