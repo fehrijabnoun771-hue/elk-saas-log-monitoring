@@ -22,3 +22,12 @@ def test_alerts_authorized():
     r = client.get("/api/alerts", headers=HEADERS)
     assert r.status_code == 200
     assert r.json()["threshold_ms"] == 3000
+
+def test_v1_34_kpis_and_role():
+    r = client.get("/api/v1/kpi/all", headers=HEADERS)
+    assert r.status_code == 200 and r.json()["total_kpis"] == 34 and r.json()["role"] == "admin"
+
+def test_v1_search_and_upload_rbac():
+    assert client.get("/api/v1/logs?level=ERROR", headers=HEADERS).status_code == 200
+    r_viewer = client.post("/api/v1/upload", headers={"X-API-Key": "viewer-key-2026"}, files={"file": ("t.json", b"{}")})
+    assert r_viewer.status_code == 403

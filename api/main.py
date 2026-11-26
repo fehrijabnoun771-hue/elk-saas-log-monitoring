@@ -46,3 +46,6 @@ def get_alerts(x_api_key: str = Header(None)):
 @app.get("/")
 def serve_webapp():
     return FileResponse("webapp/index.html")
+
+from api.enriched_routes import router as v1_router
+app.include_router(v1_router)
