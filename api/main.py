@@ -33,3 +33,16 @@ def get_kpis(x_api_key: str = Header(None)):
     r_client.setex("kpi_summary", 30, json.dumps(kpis))
     kpis["source"], kpis["api_latency_ms"] = "elasticsearch_live", round((time.time() - start) * 1000, 2)
     return kpis
+
+from fastapi.responses import FileResponse
+
+@app.get("/api/alerts")
+def get_alerts(x_api_key: str = Header(None)):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid or missing X-API-Key")
+    alerts = list(db["alerts"].find({}, {"_id": 0}).limit(20))
+    return {"total_alerts": len(alerts), "threshold_ms": 3000, "alerts": alerts}
+
+@app.get("/")
+def serve_webapp():
+    return FileResponse("webapp/index.html")
