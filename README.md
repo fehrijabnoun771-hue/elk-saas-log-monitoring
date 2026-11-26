@@ -1,25 +1,15 @@
-# Plateforme de monitoring et d'analyse de logs SaaS (stack ELK)
+# 🚀 Plateforme SaaS de Monitoring & d'Analyse de Logs (ELK + FastAPI + Redis + MongoDB)
 
-Mini-projet ITBS – Scénario D : Application Web SaaS (application monitorée fictive : **TaskFlow**).
+Plateforme de supervision DevOps permettant de collecter 5 types de logs applicatifs (`access`, `auth`, `app`, `payment`, `system`), de les analyser en temps réel via la stack **ELK**, d'exposer les KPIs via une **API REST sécurisée** (accélérée par **Redis** et archivée dans **MongoDB**) et de déclencher des **alertes critiques (> 3 s)**.
 
-## Objectif
-Centraliser, indexer, rechercher et visualiser les logs d'une application SaaS, avec alerte DevOps
-si le temps de réponse dépasse 3 secondes.
+## 🏗️ Architecture Technique
+- **Collecte & Analyse :** Logstash (TCP `5044`), Elasticsearch (`9200`), Kibana (`5601`)
+- **Backend & Stockage :** FastAPI (`8000`, clé `X-API-Key`), Cache Redis (`6379`), MongoDB (`27017`)
+- **Alerting & Frontend :** Worker Python (`scripts/alert_worker.py`), Interface Web DevOps (`webapp/index.html`)
 
-## Stack
-Elasticsearch 8.x · Logstash 8.x · Kibana 8.x · MongoDB 7.x · Redis 7.x · Flask 3.x · Docker Compose
-
-## Organisation
-Scrum en solo, 6 semaines (Sprints 0 à 4). Backlog : onglet *Issues* de ce dépôt (labels S0 à S4).
-
-## Structure
-- `docs/` : analyse, KPI, architecture, bilans de sprint
-- `webapp/` : application web (Flask)
-- `logstash/pipeline/` : pipelines d'ingestion
-- `elasticsearch/` : templates et mappings
-- `kibana/exports/` : dashboards exportés
-- `scripts/` : vérification des outils, génération de logs de test
-- `tests/` : tests
-
-## Démarrage
-À compléter au Sprint 1.
+## ⚡ Guide de Démarrage Rapide (Démo)
+1. **Démarrer l'infrastructure Docker :** `docker compose up -d`
+2. **Générer les 5 types de logs :** `python3 scripts/generate_logs.py`
+3. **Lancer le scan d'alertes (> 3s) :** `python3 scripts/alert_worker.py`
+4. **Démarrer l'API & Webapp :** `uvicorn api.main:app --host 0.0.0.0 --port 8000`
+5. **Exécuter les tests :** `python3 -m pytest -v`
