@@ -5,6 +5,7 @@ import requests, redis
 from pymongo import MongoClient
 
 app = FastAPI(title="SaaS ELK Monitoring KPI API")
+
 import time, socket, json as js_elk
 from fastapi import Request
 
@@ -13,57 +14,21 @@ async def log_real_requests_to_elk(request: Request, call_next):
     t0 = time.time()
     response = await call_next(request)
     ms = round((time.time() - t0) * 1000, 1)
+    path = request.url.path.lower()
     if response.status_code >= 400 or ms > 3000:
-        ltype = "auth" if response.status_code in (401, 403) else "app"
-        payload = {"log_type": ltype, "level": "ERROR", "service": "fastapi-prod", "tenant_id": "acme-corp", "status_code": response.status_code, "response_time_ms": ms, "msg": f"Real HTTP {response.status_code} on {request.method} {request.url.path}"}
+        ltype, svc, ten = "app", "fastapi-prod", "acme-corp"
+        if any(k in path for k in ("kpi", "login", "auth", "secret")): ltype, svc, ten = "auth", "core-backend", "globex"
+        elif any(k in path for k in ("admin", "audit", "config")): ltype, svc, ten = "audit", "core-backend", "acme-corp"
+        elif any(k in path for k in ("facture", "pay", "billing", "card")): ltype, svc, ten = "payment", "billing-saas", "initech"
+        elif any(k in path for k in ("sql", "db", "data", "table")): ltype, svc, ten = "database", "postgres-primary", "globex"
+        elif any(k in path for k in ("gateway", "rate", "waf")): ltype, svc, ten = "gateway", "api-gateway", "initech"
+        elif any(k in path for k in ("job", "worker", "export", "upload")): ltype, svc, ten = "jobs", "celery-worker", "globex"
+        elif any(k in path for k in ("ui", "page", "front", "checkout")): ltype, svc, ten = "frontend", "web-client", "acme-corp"
+        elif any(k in path for k in ("cpu", "infra", "health", "server")): ltype, svc, ten = "infra", "worker-node-01", "acme-corp"
+        payload = {"log_type": ltype, "level": "ERROR", "service": svc, "tenant_id": ten, "user_id": "usr-visitor", "status_code": response.status_code, "response_time_ms": ms, "duration_ms": ms, "cpu_pct": 91.5 if ltype=="infra" else 35.0, "msg": f"Real HTTP {response.status_code} on {request.method} {request.url.path}"}
         try:
             with socket.create_connection(("localhost", 5044), timeout=1) as s:
                 s.sendall((js_elk.dumps(payload) + "\n").encode())
         except Exception:
             pass
     return response
-
-API_KEY = os.getenv("API_KEY", "saas-devops-secret-2026")
-r_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
-db = MongoClient("mongodb://localhost:27017")["saas_monitoring"]
-
-@app.get("/api/health")
-def health():
-    return {"status": "ok", "redis": r_client.ping(), "mongodb": db.command("ping").get("ok") == 1.0}
-
-@app.get("/api/kpis")
-def get_kpis(x_api_key: str = Header(None)):
-    if x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid or missing X-API-Key")
-    start = time.time()
-    cached = r_client.get("kpi_summary")
-    if cached:
-        data = json.loads(cached)
-        data["source"] = "redis_cache"
-        data["api_latency_ms"] = round((time.time() - start) * 1000, 2)
-        return data
-    query = {"size": 0, "aggs": {"avg_ms": {"avg": {"field": "response_time_ms"}}, "err": {"filter": {"term": {"level.keyword": "ERROR"}}}, "slow": {"filter": {"range": {"response_time_ms": {"gt": 3000}}}}}}
-    res = requests.post("http://localhost:9200/saas-logs-*/_search", json=query).json()
-    total, aggs = res["hits"]["total"]["value"], res["aggregations"]
-    errors = aggs["err"]["doc_count"]
-    kpis = {"timestamp": datetime.now(timezone.utc).isoformat(), "total_logs": total, "error_count": errors, "error_rate_pct": round((errors / total * 100), 2) if total else 0, "avg_response_time_ms": round(aggs["avg_ms"]["value"] or 0, 2), "slow_requests_gt_3s": aggs["slow"]["doc_count"]}
-    db["kpi_snapshots"].insert_one(kpis.copy())
-    r_client.setex("kpi_summary", 30, json.dumps(kpis))
-    kpis["source"], kpis["api_latency_ms"] = "elasticsearch_live", round((time.time() - start) * 1000, 2)
-    return kpis
-
-from fastapi.responses import FileResponse
-
-@app.get("/api/alerts")
-def get_alerts(x_api_key: str = Header(None)):
-    if x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid or missing X-API-Key")
-    alerts = list(db["alerts"].find({}, {"_id": 0}).limit(20))
-    return {"total_alerts": len(alerts), "threshold_ms": 3000, "alerts": alerts}
-
-@app.get("/")
-def serve_webapp():
-    return FileResponse("webapp/index.html")
-
-from api.enriched_routes import router as v1_router
-app.include_router(v1_router)
