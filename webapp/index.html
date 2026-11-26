@@ -20,7 +20,7 @@ nav button.active{background:#38bdf8;color:#0f172a;font-weight:bold}
 <div id="p1" class="page active"><button onclick="loadAll()">🔄 Actualiser</button> <span id="meta" style="color:#38bdf8"></span><div id="kpis" class="grid" style="margin-top:15px"></div></div>
 <div id="p2" class="page"><h2>📤 Upload de fichiers de logs (JSON / CSV)</h2><input type="file" id="f"><button onclick="up()">Envoyer vers Logstash</button><pre id="upres"></pre></div>
 <div id="p3" class="page"><h2>🔍 Recherche de logs</h2><input id="q" placeholder="Mot-clé..."><select id="lvl"><option value="">Tous niveaux</option><option>ERROR</option><option>WARN</option><option>INFO</option></select><button onclick="searchLogs()">Rechercher</button><div id="logs"></div></div>
-<div id="p4" class="page"><h2>📊 Dashboards Kibana & Métriques</h2><p>Accédez directement aux 5 dashboards analytiques Kibana : <a href="http://192.168.1.6:5601" target="_blank" style="color:#38bdf8">Ouvrir Kibana (Port 5601)</a></p></div>
+<div id="p4" class="page"><h2>📊 Dashboards Kibana & Métriques</h2><p>Accédez directement aux 5 dashboards analytiques Kibana : <a href="http://localhost:5601" target="_blank" style="color:#38bdf8">Ouvrir Kibana (Port 5601)</a></p></div>
 <div id="p5" class="page"><h2>🚨 Alertes DevOps R1-R8 (Cycle de vie)</h2><div id="alerts"></div></div>
 <script>
 const H={"X-API-Key":"saas-devops-secret-2026"};
