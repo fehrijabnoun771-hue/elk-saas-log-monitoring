@@ -5,6 +5,24 @@ import requests, redis
 from pymongo import MongoClient
 
 app = FastAPI(title="SaaS ELK Monitoring KPI API")
+import time, socket, json as js_elk
+from fastapi import Request
+
+@app.middleware("http")
+async def log_real_requests_to_elk(request: Request, call_next):
+    t0 = time.time()
+    response = await call_next(request)
+    ms = round((time.time() - t0) * 1000, 1)
+    if response.status_code >= 400 or ms > 3000:
+        ltype = "auth" if response.status_code in (401, 403) else "app"
+        payload = {"log_type": ltype, "level": "ERROR", "service": "fastapi-prod", "tenant_id": "acme-corp", "status_code": response.status_code, "response_time_ms": ms, "msg": f"Real HTTP {response.status_code} on {request.method} {request.url.path}"}
+        try:
+            with socket.create_connection(("localhost", 5044), timeout=1) as s:
+                s.sendall((js_elk.dumps(payload) + "\n").encode())
+        except Exception:
+            pass
+    return response
+
 API_KEY = os.getenv("API_KEY", "saas-devops-secret-2026")
 r_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
 db = MongoClient("mongodb://localhost:27017")["saas_monitoring"]
