@@ -32,3 +32,9 @@ async def log_real_requests_to_elk(request: Request, call_next):
         except Exception:
             pass
     return response
+
+from fastapi.staticfiles import StaticFiles
+from api.enriched_routes import router as enriched_router
+app.include_router(enriched_router)
+
+app.mount("/", StaticFiles(directory="webapp", html=True), name="webapp")
