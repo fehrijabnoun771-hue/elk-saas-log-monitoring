@@ -1,6 +1,6 @@
 import os, json, time
 from datetime import datetime, timezone
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, Header, HTTPException
 import requests, redis
 from pymongo import MongoClient
 
@@ -36,5 +36,10 @@ async def log_real_requests_to_elk(request: Request, call_next):
 from fastapi.staticfiles import StaticFiles
 from api.enriched_routes import router as enriched_router
 app.include_router(enriched_router)
+
+@app.get("/api/alerts")
+def alias_alerts(x_api_key: str = Header(None)):
+    from api.enriched_routes import get_all_alerts
+    return get_all_alerts(x_api_key)
 
 app.mount("/", StaticFiles(directory="webapp", html=True), name="webapp")

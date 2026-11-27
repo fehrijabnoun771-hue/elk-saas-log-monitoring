@@ -58,3 +58,22 @@ def update_alert(alert_id: str, action: str, x_api_key: str = Header(None)):
     st = "ACKNOWLEDGED" if action == "ack" else "RESOLVED"
     db["alerts"].update_one({"id": alert_id}, {"$set": {"status": st}})
     return {"id": alert_id, "status": st}
+
+from pymongo import MongoClient
+
+@router.get("/alerts")
+def get_all_alerts(x_api_key: str = Header(None)):
+    if x_api_key not in ("saas-devops-secret-2026", "viewer-key-2026"):
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+    db = MongoClient("mongodb://localhost:27017/")["saas_monitoring"]
+    items = list(db["alerts"].find({}, {"_id": 0}).sort("detected_at", -1).limit(50))
+    return {"total": len(items), "alerts": items}
+
+@router.post("/alerts/{alert_id}/{action}")
+def update_alert_status(alert_id: str, action: str, x_api_key: str = Header(None)):
+    if x_api_key != "saas-devops-secret-2026":
+        raise HTTPException(status_code=403, detail="Admin API Key required")
+    db = MongoClient("mongodb://localhost:27017/")["saas_monitoring"]
+    st = "ACKNOWLEDGED" if action == "ack" else "RESOLVED"
+    db["alerts"].update_one({"id": alert_id}, {"$set": {"status": st}})
+    return {"id": alert_id, "status": st}
