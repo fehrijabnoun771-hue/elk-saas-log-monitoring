@@ -1,40 +1,236 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>TaskFlow ELK Monitor v2.0</title>
-<style>
-body{font-family:Arial,sans-serif;background:#0f172a;color:#f8fafc;margin:0;padding:20px}
-nav{display:flex;gap:10px;margin-bottom:20px;border-bottom:1px solid #334155;padding-bottom:10px}
-nav button{background:#1e293b;color:#f8fafc;border:1px solid #38bdf8;padding:8px 14px;border-radius:6px;cursor:pointer}
-nav button.active{background:#38bdf8;color:#0f172a;font-weight:bold}
-.page{display:none}.page.active{display:block}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
-.card{background:#1e293b;padding:16px;border-radius:8px;border-left:4px solid #38bdf8}
-.alert{background:#3f1219;border-left:4px solid #ef4444;padding:10px;margin:6px 0;border-radius:6px;display:flex;justify-content:space-between}
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<title>TaskFlow ELK Monitor v3.0</title><style>
+:root{--bg:#0B1220;--side:#0E172A;--card:#16223A;--card2:#1B2A47;--line:#243452;
+--txt:#E6EDF7;--mut:#8EA0BD;--acc:#38BDF8;--ok:#22C55E;--warn:#F59E0B;--bad:#EF4444}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:system-ui,sans-serif;
+display:flex;min-height:100vh;font-size:13px}
+aside{width:230px;background:var(--side);border-right:1px solid var(--line);
+display:flex;flex-direction:column;padding:18px 14px;flex-shrink:0}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;
+padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.brand-dot{width:10px;height:10px;border-radius:3px;background:var(--acc)}
+nav{display:flex;flex-direction:column;gap:6px;flex:1}
+.nav-btn{background:transparent;border:1px solid transparent;color:var(--mut);
+padding:10px 12px;border-radius:8px;text-align:left;cursor:pointer;
+display:flex;justify-content:space-between;font-weight:500}
+.nav-btn:hover{background:rgba(56,189,248,.08);color:var(--txt)}
+.nav-btn.active{background:rgba(56,189,248,.15);border-color:var(--acc);
+color:#fff;font-weight:600}
+.badge{background:var(--bad);color:#fff;font-size:11px;font-weight:700;
+padding:1px 7px;border-radius:99px}
+.sys-box{background:var(--card);border:1px solid var(--line);border-radius:10px;
+padding:12px;font-size:11.5px;color:var(--mut);display:flex;
+flex-direction:column;gap:6px}
+.sys-row{display:flex;justify-content:space-between}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;
+margin-right:6px;background:var(--ok)}
+main{flex:1;padding:20px 26px;overflow-y:auto;max-width:1440px}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;
+align-items:center;gap:12px;margin-bottom:18px;padding-bottom:14px;
+border-bottom:1px solid var(--line)}
+.status-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.pill{background:var(--card);border:1px solid var(--line);padding:5px 10px;
+border-radius:7px;font-size:11.5px;color:var(--mut)}.pill b{color:var(--txt)}
+.btn{background:var(--card2);border:1px solid var(--line);color:var(--txt);
+padding:7px 13px;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px}
+.btn-pri{background:var(--acc);color:#061224;border-color:var(--acc)}
+.btn-ok{background:rgba(34,197,94,.16);border-color:var(--ok);color:var(--ok)}
+.btn-warn{background:rgba(245,158,11,.15);border-color:var(--warn);color:var(--warn)}
+.section{display:none}.section.active{display:block}
+.hero-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:14px;margin-bottom:18px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;
+padding:14px 16px;border-left:4px solid var(--ok)}
+.kpi.warn{border-left-color:var(--warn)}.kpi.bad{border-left-color:var(--bad)}
+.kpi-title{font-size:11px;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.kpi-val{font-size:28px;font-weight:700;margin-bottom:6px}
+.kpi-val span{font-size:13px;color:var(--mut);margin-left:3px}
+.kpi-foot{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mut)}
+.tag{padding:2px 8px;border-radius:5px;font-size:10.5px;font-weight:700;
+text-transform:uppercase}
+.tag.ok{background:rgba(34,197,94,.16);color:var(--ok)}
+.tag.warn{background:rgba(245,158,11,.18);color:var(--warn)}
+.tag.bad{background:rgba(239,68,68,.18);color:var(--bad)}
+.tag.info{background:rgba(56,189,248,.18);color:var(--acc)}
+.charts-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-bottom:18px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.panel h3{font-size:12px;text-transform:uppercase;color:var(--mut);margin-bottom:12px}
+.fam-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+.fam-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.fam-head{display:flex;justify-content:space-between;margin-bottom:10px;
+padding-bottom:8px;border-bottom:1px solid var(--line);font-weight:700;color:var(--acc)}
+.kv-row{display:flex;justify-content:space-between;padding:5px 0;
+border-bottom:1px dashed rgba(36,52,82,.7);font-size:12px}
+.kv-k{color:var(--mut)}.kv-v{font-family:monospace;font-weight:600}
+input[type=text],select{background:var(--side);border:1px solid var(--line);
+color:var(--txt);padding:8px 12px;border-radius:8px;font-size:13px}
+.chip-bar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.chip{background:var(--side);border:1px solid var(--line);color:var(--mut);
+padding:5px 11px;border-radius:99px;cursor:pointer;font-size:11.5px;font-weight:600}
+.chip.active{background:rgba(56,189,248,.18);border-color:var(--acc);color:#fff}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th{text-align:left;color:var(--mut);font-size:11px;text-transform:uppercase;
+padding:9px 10px;border-bottom:1px solid var(--line)}
+td{padding:9px 10px;border-bottom:1px solid rgba(36,52,82,.6);font-size:12.5px}
+tr:hover td{background:rgba(56,189,248,.05);cursor:pointer}
+.json-box{background:var(--side);border:1px solid var(--line);border-radius:8px;
+padding:12px;font-family:monospace;font-size:11.5px;color:#93C5FD;margin-top:12px;
+white-space:pre-wrap;max-height:170px;overflow:auto}
+.dropzone{border:2px dashed var(--line);border-radius:12px;padding:30px;
+text-align:center;background:rgba(14,23,42,.5);cursor:pointer;margin-bottom:14px}
+.svc-bar{margin-bottom:10px}
+.svc-lbl{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.bar-bg{height:8px;background:var(--side);border-radius:99px}
+.bar-fill{height:100%;background:var(--acc);border-radius:99px}
+iframe.kibana-frame{width:100%;height:620px;border:1px solid var(--line);
+border-radius:10px;margin-top:12px}
 </style></head><body>
-<h1>🚀 TaskFlow SaaS ELK Monitor v2.0 (34 KPI • 12 Logs • 8 Règles)</h1>
-<nav>
-  <button class="active" onclick="show('p1',this)">1. Dashboard 34 KPI</button>
-  <button onclick="show('p2',this)">2. Upload Logs</button>
-  <button onclick="show('p3',this)">3. Recherche & Filtres</button>
-  <button onclick="show('p4',this)">4. Kibana & Rapports</button>
-  <button onclick="show('p5',this)">5. Alertes DevOps (R1-R8)</button>
-</nav>
-<div id="p1" class="page active"><button onclick="loadAll()">🔄 Actualiser</button> <span id="meta" style="color:#38bdf8"></span><div id="kpis" class="grid" style="margin-top:15px"></div></div>
-<div id="p2" class="page"><h2>📤 Upload de fichiers de logs (JSON / CSV)</h2><input type="file" id="f"><button onclick="up()">Envoyer vers Logstash</button><pre id="upres"></pre></div>
-<div id="p3" class="page"><h2>🔍 Recherche de logs</h2><input id="q" placeholder="Mot-clé..."><select id="lvl"><option value="">Tous niveaux</option><option>ERROR</option><option>WARN</option><option>INFO</option></select><button onclick="searchLogs()">Rechercher</button><div id="logs"></div></div>
-<div id="p4" class="page"><h2>📊 Dashboards Kibana & Métriques</h2><p>Accédez directement aux 5 dashboards analytiques Kibana : <a href="http://localhost:5601" target="_blank" style="color:#38bdf8">Ouvrir Kibana (Port 5601)</a></p></div>
-<div id="p5" class="page"><h2>🚨 Alertes DevOps R1-R8 (Cycle de vie)</h2><div id="alerts"></div></div>
+<aside>
+  <div class="brand"><span class="brand-dot"></span>TaskFlow ELK v3.0</div>
+  <nav>
+    <button class="nav-btn active" onclick="showTab('dash',this)">Dashboard 34 KPI</button>
+    <button class="nav-btn" onclick="showTab('search',this)">Recherche & Logs</button>
+    <button class="nav-btn" onclick="showTab('upload',this)">Upload Logs</button>
+    <button class="nav-btn" onclick="showTab('kibana',this)">Kibana & Rapports</button>
+    <button class="nav-btn" onclick="showTab('alerts',this)">
+      <span>Alertes DevOps</span><span class="badge" id="alert-badge">0</span>
+    </button>
+  </nav>
+  <div class="sys-box">
+    <div class="sys-row"><span><i class="dot"></i>Logstash :5044</span><b>OK</b></div>
+    <div class="sys-row"><span><i class="dot"></i>Elasticsearch</span><b>OK</b></div>
+    <div class="sys-row"><span><i class="dot"></i>Redis Cache</span><b>OK</b></div>
+    <div class="sys-row"><span><i class="dot"></i>Worker 3s</span><b>ACTIF</b></div>
+    <div style="border-top:1px solid var(--line);padding-top:6px">
+      Role : <b style="color:var(--acc)">Admin RBAC</b>
+    </div>
+  </div>
+</aside>
+<main>
+  <header>
+    <div>
+      <h1 id="page-title" style="font-size:19px">Vue d'ensemble - 34 KPI Temps Reel</h1>
+      <div style="color:var(--mut);font-size:11.5px">Supervision SaaS ELK + Redis</div>
+    </div>
+    <div class="status-bar">
+      <div class="pill">Logs : <b id="total-logs">--</b></div>
+      <div class="pill">Regles : <b>R1-R8</b></div>
+      <div class="pill" id="last-upd">Actualise il y a 0 s</div>
+      <button class="btn btn-pri" onclick="refreshAll()">Actualiser</button>
+    </div>
+  </header>
+  <section id="tab-dash" class="section active">
+    <div class="hero-grid" id="hero-kpis"></div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Latence HTTP (P50 / P95)</h3>
+        <svg viewBox="0 0 520 175" style="width:100%;height:175px">
+          <line x1="30" y1="35" x2="505" y2="35" stroke="#EF4444" stroke-dasharray="4 4"/>
+          <text x="35" y="29" fill="#EF4444" font-size="10">Seuil 3 000 ms</text>
+          <polyline fill="none" stroke="#F59E0B" stroke-width="2.5" points="30,110 110,95 190,65 270,48 350,82 430,55 505,62"/>
+          <polyline fill="none" stroke="#38BDF8" stroke-width="2.5" points="30,145 110,138 190,128 270,120 350,132 430,124 505,126"/>
+          <text x="35" y="166" fill="#38BDF8" font-size="11">P50 Mediane</text>
+          <text x="145" y="166" fill="#F59E0B" font-size="11">P95 Percentile</text>
+        </svg>
+      </div>
+      <div class="panel"><h3>Top Services par Volume</h3><div id="top-services"></div></div>
+    </div>
+    <div class="fam-grid" id="fam-kpis"></div>
+  </section>
+  <section id="tab-search" class="section"><div class="panel">
+    <div style="display:flex;gap:10px;margin-bottom:10px">
+      <input type="text" id="q-kw" placeholder="Mot-cle, service..." style="flex:1">
+      <select id="q-lvl" onchange="loadLogs()"><option value="">Tous</option><option value="ERROR">ERROR</option><option value="WARN">WARN</option><option value="INFO">INFO</option></select>
+      <button class="btn btn-pri" onclick="loadLogs()">Rechercher</button>
+    </div>
+    <div class="chip-bar">
+      <button class="chip active" onclick="qf('','',this)">Tous</button>
+      <button class="chip" onclick="qf('','ERROR',this)">ERROR</button>
+      <button class="chip" onclick="qf('401','',this)">Auth 401</button>
+      <button class="chip" onclick="qf('404','',this)">Not Found 404</button>
+    </div>
+    <div id="search-count" style="color:var(--mut);margin-bottom:6px"></div>
+    <table><thead><tr><th>Date</th><th>Niveau</th><th>Service</th><th>Tenant</th><th>Message</th><th>Code</th></tr></thead><tbody id="logs-tbody"></tbody></table>
+    <div class="json-box" id="log-detail">Cliquez sur une ligne pour voir le JSON.</div>
+  </div></section>
+  <section id="tab-upload" class="section"><div class="panel">
+    <h3>Upload Logs (JSON / CSV -> Logstash 5044)</h3>
+    <div class="dropzone" onclick="document.getElementById('file-inp').click()">
+      <b>Cliquez pour choisir un fichier (.json, .csv)</b>
+      <input type="file" id="file-inp" style="display:none" onchange="prevF(this.files)">
+    </div>
+    <div id="file-meta" style="color:var(--acc);margin-bottom:8px"></div>
+    <button class="btn btn-pri" id="btn-up" onclick="upF()" disabled>Envoyer</button>
+    <span id="up-st" style="margin-left:8px"></span>
+  </div></section>
+  <section id="tab-kibana" class="section"><div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 style="margin:0">15 Dashboards Kibana (5601)</h3>
+      <a href="http://localhost:5601/app/dashboards" target="_blank" class="btn btn-pri" style="text-decoration:none">Ouvrir Kibana</a>
+    </div>
+    <iframe class="kibana-frame" src="http://localhost:5601/app/dashboards"></iframe>
+  </div></section>
+  <section id="tab-alerts" class="section">
+    <div class="hero-grid" id="alert-counters"></div>
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+        <div class="chip-bar" style="margin:0">
+          <button class="chip active" onclick="fa('ALL',this)">Toutes</button>
+          <button class="chip" onclick="fa('ACTIVE',this)">Actives</button>
+          <button class="chip" onclick="fa('ACKNOWLEDGED',this)">Acquittees</button>
+          <button class="chip" onclick="fa('RESOLVED',this)">Resolues</button>
+        </div>
+        <label style="color:var(--mut)"><input type="checkbox" id="grp-mode" checked onchange="renderA()"> Regrouper (xN)</label>
+      </div>
+      <table><thead><tr><th>Severite</th><th>Regle & Message</th><th>Service</th><th>Occ.</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="alerts-tbody"></tbody></table>
+    </div>
+  </section>
+</main>
 <script>
 const H={"X-API-Key":"saas-devops-secret-2026"};
-function show(id,b){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');b.classList.add('active');}
-async function loadAll(){
-  const k=await(await fetch("/api/v1/kpi/all",{headers:H})).json();
-  document.getElementById("meta").innerText=`Source: ${k.source} | Rôle: ${k.role} | Total logs: ${k.total_logs}`;
-  const fams=["performance","fiabilite","database","business","securite","infra_pipeline"];
-  document.getElementById("kpis").innerHTML=fams.map(f=>`<div class="card"><h3>${f.toUpperCase()}</h3><pre>${JSON.stringify(k[f],null,2)}</pre></div>`).join("");
-  const a=await(await fetch("/api/alerts",{headers:H})).json();
-  document.getElementById("alerts").innerHTML=a.alerts.map(x=>`<div class="alert"><span><b>[${x.status}]</b> ${x.message}</span><span><button onclick="act('${x.id}','ack')">Acquitter</button> <button onclick="act('${x.id}','resolve')">Résoudre</button></span></div>`).join("");
+let allLogs=[],allAlerts=[],aFilt="ALL",lastR=Date.now(),selF=null;
+function showTab(id,b){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if(b)b.classList.add('active');
+  if(id==='search')loadLogs(); if(id==='alerts')loadAlerts();
 }
-async function act(id,a){await fetch(`/api/v1/alerts/${id}/${a}`,{method:"POST",headers:H});loadAll();}
-async function searchLogs(){const r=await(await fetch(`/api/v1/logs?level=${document.getElementById("lvl").value}&q=${document.getElementById("q").value}`,{headers:H})).json();document.getElementById("logs").innerHTML=r.logs.slice(0,15).map(l=>`<div class="card" style="margin:6px 0"><b>[${l.log_type}]</b> (${l.level}) ${l.msg} — <i>${l.tenant_id}</i></div>`).join("");}
-async function up(){const fd=new FormData();fd.append("file",document.getElementById("f").files);const r=await(await fetch("/api/v1/upload",{method:"POST",headers:H,body:fd})).json();document.getElementById("upres").innerText=JSON.stringify(r,null,2);}
-loadAll();
+function stT(v,w,b,hi=true){return(hi?v>=b:v<=b)?'bad':(hi?v>=w:v<=w)?'warn':'ok';}
+async function loadKPIs(){
+  const d=await(await fetch('/api/v1/kpi/all',{headers:H})).json();
+  document.getElementById('total-logs').textContent=d.total_logs??'--';
+  const p=d.performance||{},r=d.reliability||{};
+  const er=Number(r.K09_error_rate_pct??0),sla=Number(r.K13_sla_pct??(100-er));
+  const lat=Number(p.K01_avg_ms??0),ap=Number(p.K07_apdex??0.9);
+  const cs=[
+    {t:"Taux erreur",v:er.toFixed(2),u:"%",g:"Cible < 2%",s:stT(er,2,5,true)},
+    {t:"SLA Dispo",v:sla.toFixed(2),u:"%",g:"Cible >= 99.5%",s:stT(sla,99.5,99,false)},
+    {t:"Latence Moy",v:Math.round(lat),u:"ms",g:"Seuil < 1000ms",s:stT(lat,1000,3000,true)},
+    {t:"Score Apdex",v:ap.toFixed(2),u:"",g:"Cible >= 0.85",s:stT(ap,0.85,0.7,false)}
+  ];
+  document.getElementById('hero-kpis').innerHTML=cs.map(c=>`<div class="kpi ${c.s}"><div class="kpi-title">${c.t}</div><div class="kpi-val">${c.v}<span>${c.u}</span></div><div class="kpi-foot"><span>${c.g}</span><span class="tag ${c.s}">${c.s}</span></div></div>`).join('');
+  const fs=[["Performance",d.performance],["Fiabilite",d.reliability],["Database",d.database],["Business",d.business],["Securite",d.security],["Infra",d.infra_pipeline||d.infrastructure]];
+  document.getElementById('fam-kpis').innerHTML=fs.map(([n,o])=>{const e=Object.entries(o||{});return`<div class="fam-card"><div class="fam-head"><span>${n}</span><span class="tag info">${e.length} KPI</span></div>${e.map(([k,v])=>`<div class="kv-row"><span class="kv-k">${k}</span><span class="kv-v">${typeof v==='object'?JSON.stringify(v):v}</span></div>`).join('')}</div>`;}).join('');
+}
+async function loadLogs(){
+  const kw=document.getElementById('q-kw').value,lv=document.getElementById('q-lvl').value;
+  const d=await(await fetch(`/api/v1/logs/search?q=${encodeURIComponent(kw)}&level=${lv}`,{headers:H})).json();
+  allLogs=d.logs||d.results||(Array.isArray(d)?d:[]);
+  document.getElementById('search-count').textContent=`${allLogs.length} logs (recents en haut)`;
+  document.getElementById('logs-tbody').innerHTML=allLogs.slice(0,40).map((l,i)=>{const v=(l.level||'INFO').toUpperCase(),c=v==='ERROR'?'bad':v==='WARN'?'warn':'ok';return`<tr onclick="document.getElementById('log-detail').textContent=JSON.stringify(allLogs[${i}],null,2)"><td>${(l['@timestamp']||'').replace('T',' ').slice(0,19)}</td><td><span class="tag ${c}">${v}</span></td><td><b>${l.service||'-'}</b></td><td>${l.tenant_id||'-'}</td><td>${l.msg||'-'}</td><td>${l.status_code||'-'}</td></tr>`;}).join('');
+  const sm={};allLogs.forEach(l=>{const s=l.service||'autre';sm[s]=(sm[s]||0)+1;});
+  const top=Object.entries(sm).sort((a,b)=>b-a).slice(0,5),mx=top?top:1;
+  document.getElementById('top-services').innerHTML=top.map(([s,n])=>`<div class="svc-bar"><div class="svc-lbl"><span>${s}</span><b>${n}</b></div><div class="bar-bg"><div class="bar-fill" style="width:${Math.round(n*100/mx)}%"></div></div></div>`).join('');
+}
+function qf(k,l,el){document.querySelectorAll('#tab-search .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');document.getElementById('q-kw').value=k;document.getElementById('q-lvl').value=l;loadLogs();}
+function prevF(f){if(!f.length)return;selF=f;document.getElementById('file-meta').textContent=selF.name;document.getElementById('btn-up').disabled=false;}
+async function upF(){if(!selF)return;const fd=new FormData();fd.append('file',selF);const d=await(await fetch('/api/v1/upload',{method:'POST',headers:H,body:fd})).json();document.getElementById('up-st').textContent=`OK (${d.ingested||d.count||'logs'})`;refreshAll();}
+async function loadAlerts(){const d=await(await fetch('/api/alerts',{headers:H})).json();allAlerts=d.alerts||[];const act=allAlerts.filter(a=>a.status==='ACTIVE');document.getElementById('alert-badge').textContent=act.length;const crit=act.filter(a=>['CRITICAL','ERROR'].includes((a.severity||'').toUpperCase())).length;document.getElementById('alert-counters').innerHTML=[{t:"Critiques",v:crit,c:"bad"},{t:"Warnings",v:act.length-crit,c:"warn"},{t:"Acquittees",v:allAlerts.filter(a=>a.status==='ACKNOWLEDGED').length,c:"ok"},{t:"Resolues",v:allAlerts.filter(a=>a.status==='RESOLVED').length,c:"ok"}].map(x=>`<div class="kpi ${x.c}"><div class="kpi-title">${x.t}</div><div class="kpi-val">${x.v}</div></div>`).join('');renderA();}
+function fa(s,el){document.querySelectorAll('#tab-alerts .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');aFilt=s;renderA();}
+function renderA(){let list=allAlerts.filter(a=>aFilt==='ALL'||a.status===aFilt),rows=[];if(document.getElementById('grp-mode').checked){const m=new Map();for(const a of list){const k=`${a.rule}|${a.service}|${a.status}`;if(!m.has(k))m.set(k,{...a,count:1,ids:[a.id]});else{const g=m.get(k);g.count++;g.ids.push(a.id);}}rows=[...m.values()];}else rows=list.map(a=>({...a,count:1,ids:[a.id]}));document.getElementById('alerts-tbody').innerHTML=rows.map(a=>{const sev=(a.severity||'ERROR').toUpperCase(),sc=['CRITICAL','ERROR'].includes(sev)?'bad':'warn',stc=a.status==='ACTIVE'?'bad':a.status==='ACKNOWLEDGED'?'warn':'ok';return`<tr><td><span class="tag ${sc}">${sev}</span></td><td><b>[${a.rule}]</b> ${a.message}</td><td>${a.service||'-'}</td><td><b>x${a.count}</b></td><td><span class="tag ${stc}">${a.status}</span></td><td>${a.status==='ACTIVE'?`<button class="btn btn-warn" onclick='actA(${JSON.stringify(a.ids)},"ack")'>Acquitter</button> `:''}${a.status!=='RESOLVED'?`<button class="btn btn-ok" onclick='actA(${JSON.stringify(a.ids)},"resolve")'>Resoudre</button>`:'OK'}</td></tr>`;}).join('');}
+async function actA(ids,act){for(const id of ids)await fetch(`/api/v1/alerts/${id}/${act}`,{method:'POST',headers:H});loadAlerts();}
+function refreshAll(){lastR=Date.now();loadKPIs();loadLogs();loadAlerts();}
+setInterval(()=>{const s=Math.floor((Date.now()-lastR)/1000);document.getElementById('last-upd').textContent=`Actualise il y a ${s} s`;if(s>=10)refreshAll();},1000);
+refreshAll();
 </script></body></html>
